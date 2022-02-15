@@ -129,11 +129,10 @@ def webpage():
 def health_page():
     return {'message': 'This is the health page'}
 
-@app.route('/details/<int:pk>/', methods=['GET'])
-def details(pk):
-    g = Grocery.get(pk)
-
-    return render_template('details.html', g = g)
+@app.route('/details/<int:id>/', methods=['GET'])
+def details(id):
+    g = Grocery.get(grocery_id=id)
+    return render_template('details.jinja2', g = g)
 
 
 api.add_resource(GroceryList, '/groceries')
