@@ -57,6 +57,29 @@ grocery_req_patch = reqparse.RequestParser()
 grocery_req_patch.add_argument('number', type=str, required=True)
 grocery_req_patch.add_argument('type', type=str, required=True)
 grocery_req_patch.add_argument('origin', type=str, required=True)
+def abort_if_grocery_missing(grocery_id):
+    grocery  = GroceryModel.query.get(grocery_id)
+
+    if not grocery:
+        abort(404, message='No grocery found with this id')
+class Grocery(Resource):
+    @marshal_with(grocery_model_field)
+    def get(self, grocery_id):
+        """returns a grocery
+        ---
+        parameters:
+            - name: grocery_id
+              in: path
+              type: integer
+              required: true
+        responses:
+            200:
+                description: Get data related to one particular grocery
+        """
+        abort_if_grocery_missing(grocery_id)
+        grocery = GroceryModel.query.get(grocery_id)
+
+        return grocery
 
 class GroceryList(Resource):
 
@@ -74,6 +97,7 @@ class GroceryList(Resource):
         result = GroceryModel.query.all()
 
         return result
+
 
     @marshal_with(grocery_model_field)
     def post(self):
@@ -104,6 +128,13 @@ def webpage():
 @app.route('/health/', methods=['GET'])
 def health_page():
     return {'message': 'This is the health page'}
+
+@app.route('/details/<int:pk>/', methods=['GET'])
+def details(pk):
+    g = Grocery.get(pk)
+
+    return render_template('details.html', g = g)
+
 
 api.add_resource(GroceryList, '/groceries')
 
