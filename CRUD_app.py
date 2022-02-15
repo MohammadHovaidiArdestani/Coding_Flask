@@ -30,15 +30,16 @@ class GroceryModel(db.Model):
 
 db.create_all()
 
-grocery_data = {
+""" grocery_data = {
      1: {
          "id": 1,
          "number": "GR1",
          "type": "Veg",
          "origin": "Spain",
      },
-}
+} """
 
+# define the format of data so that the marshal_with can convert them later
 grocery_model_field = {
     'id': fields.Integer,
     'number': fields.String,
@@ -46,14 +47,21 @@ grocery_model_field = {
     'origin': fields.String,
 }
 
+# structure of data
 grocery_req = reqparse.RequestParser()
 grocery_req.add_argument('number', type=str, required=True)
-grocery_req.add_argument('type', type=int, required=True)
+grocery_req.add_argument('type', type=str, required=True)
 grocery_req.add_argument('origin', type=str, required=True)
+
+grocery_req_patch = reqparse.RequestParser()
+grocery_req_patch.add_argument('number', type=str, required=True)
+grocery_req_patch.add_argument('type', type=str, required=True)
+grocery_req_patch.add_argument('origin', type=str, required=True)
 
 class GroceryList(Resource):
 
-    #@marshal_with(grocery_model_field)
+# take the new data and convert them accordingly
+    @marshal_with(grocery_model_field)
     def get(self):
         """
         returns all groceris
@@ -62,26 +70,43 @@ class GroceryList(Resource):
             200:
                 description : list of groceries
         """
-        return grocery_data
-        #result = GroceryModel.query.all()
+        #return grocery_data
+        result = GroceryModel.query.all()
 
-        #return result
+        return result
+
+    @marshal_with(grocery_model_field)
+    def post(self):
+        new_grocery_data = grocery_req.parse_args()
+
+        new_grocery = GroceryModel(
+            number = new_grocery_data['number'],
+            type = new_grocery_data['type'],
+            origin = new_grocery_data['origin'],
+
+        )
+
+# adding the new data to our database
+        db.session.add(new_grocery)
+        db.session.commit()
+
+        return new_grocery, 201
 
 
-@app.route('/', methods=['GET'])
-def main_page():
-    return {'message': 'This is the main page'}
+@app.route('/')
+def webpage():
+    groceries = GroceryModel.query.all()
+    magic_word = 'Step5'
+    return render_template('webpage.html', groceries=groceries, magic_word=magic_word)
+#def main_page():
+#    return {'message': 'This is the main page'}
 
-@app.route('/health', methods=['GET'])
+@app.route('/health/', methods=['GET'])
 def health_page():
     return {'message': 'This is the health page'}
 
-api.add_resource(GroceryList, '/health/groceries/')
+api.add_resource(GroceryList, '/groceries')
 
-'''def webpage():
-    groceries = GroceryModel.query.all()
-    magic_word = 'Step4'
-    return render_template('webpage.html', groceries=groceries, magic_word=magic_word)
-'''
+
 if __name__ == '__main__':
       app.run(debug = True, host='0.0.0.0', port=8080)
