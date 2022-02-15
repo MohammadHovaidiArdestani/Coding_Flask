@@ -7,5 +7,14 @@
             <p>Number:{{ g['number'] }}</p>
             <p>Type:{{ g['type'] }}</p>
             <p>Origin:{{ g['origin'] }}</p>
+            <p><form method="post" action="{{ url_for('delete', id = g['id']) }}">
+                          <button type="submit" class="btn btn-danger btn-sm">Delete item</button>
+                    </form>
+            </p>
+            <p><form method="post" action="{{ url_for('modify', id = g['id']) }}">
+                          <button type="submit" class="btn btn-danger btn-sm">Modify item</button>
+                    </form>
+            </p>
+
 </body>
 </html>

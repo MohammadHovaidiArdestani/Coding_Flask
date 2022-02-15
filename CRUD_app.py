@@ -167,7 +167,6 @@ class Grocery(Resource):
 
 
 @app.route('/',methods=["GET", "POST"])
-
 def webpage():
     groceries = GroceryModel.query.all()
     return render_template("webpage.html", groceries = groceries)
@@ -192,8 +191,6 @@ def JSON_HMTL():
         return render_template('webpage.html', groceries=groceries, magic_word=magic_word)
     else:
         return redirect("/groceries") """
-#def main_page():
-#    return {'message': 'This is the main page'}
 
 #@app.route('/')
 def redirecting_url():
@@ -202,6 +199,42 @@ def redirecting_url():
 @app.route('/health/', methods=['GET'])
 def health_page():
     return {'message': 'This is the health page'}
+
+@app.route('/details/<int:id>/', methods=['GET'])
+def details(id):
+    g = GroceryModel.query.get(id)
+    return render_template('details.html', g = g)
+
+@app.route('/create', methods=['GET', 'POST'])
+def create():
+    if request.method == 'POST':
+        number = request.form.get('number')
+        type = request.form.get('type')
+        origin = request.form.get('origin')
+        new_grocery = GroceryModel(
+            number = number,
+            type = type,
+            origin = origin
+        )
+        db.session.add(new_grocery)
+        db.session.commit()
+        return redirect("http://192.168.18.190:8080/")
+
+    return render_template('create.html')
+
+@app.route('/delete/<int:id>/', methods=['POST'])
+def delete(id):
+    g = GroceryModel.query.get(id)
+    db.session.delete(g)
+    db.session.commit()
+    groceries = GroceryModel.query.all()
+    magic_word = 'Step5'
+    return render_template('webpage.html', groceries=groceries, magic_word=magic_word)
+
+@app.route('/modify/<int:id>/', methods=['POST'])
+def modify(id):
+    g = GroceryModel.query.get(id)
+    return render_template('modify.html', g = g)
 
 api.add_resource(GroceryList, '/groceries')
 api.add_resource(Grocery, '/groceries/<int:grocery_id>')
