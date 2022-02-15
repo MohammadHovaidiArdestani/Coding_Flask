@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Grocery List</title>
+</head>
+
+<body>
+    <div class="m-4">
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Number</th>
+                    <th>Type</th>
+                    <th>Origin</th>
+                </tr>
+            </thead>
+            <tbody>
+                
+                {% for g in groceries %}
+                
+                <tr>
+                    <td>{{g.id}}</td>
+                    <td>{{g.number}}</td>
+                    <td>{{g.Type}}</td>
+                    <td>{{g.origin}}</td>
+                </tr>
+
+                {% endfor %}
+
+
+            </tbody>
+        </table>
+    </div>
+</body>
+
+</html>
