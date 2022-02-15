@@ -131,7 +131,7 @@ def health_page():
 
 @app.route('/details/<int:id>/', methods=['GET'])
 def details(id):
-    g = Grocery.get(grocery_id=id)
+    g = GroceryModel.query.get(id)
     return render_template('details.jinja2', g = g)
 
 
