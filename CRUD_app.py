@@ -1,5 +1,6 @@
 # Development  project - Flask
-from flask import Flask, request, render_template
+from flask import Flask, redirect, request, render_template
+import flask
 from flask_restful import Api, Resource, abort, reqparse, marshal_with, fields
 import random
 import requests
@@ -54,9 +55,15 @@ grocery_req.add_argument('type', type=str, required=True)
 grocery_req.add_argument('origin', type=str, required=True)
 
 grocery_req_patch = reqparse.RequestParser()
-grocery_req_patch.add_argument('number', type=str, required=True)
-grocery_req_patch.add_argument('type', type=str, required=True)
-grocery_req_patch.add_argument('origin', type=str, required=True)
+grocery_req_patch.add_argument('number', type=str, required=False)
+grocery_req_patch.add_argument('type', type=str, required=False)
+grocery_req_patch.add_argument('origin', type=str, required=False)
+
+def abort_if_grocery_missing(grocery_id):
+    grocery  = GroceryModel.query.get(grocery_id)
+
+    if not grocery:
+        abort(404, message='No grocery found with this id')
 
 class GroceryList(Resource):
 
@@ -92,20 +99,112 @@ class GroceryList(Resource):
 
         return new_grocery, 201
 
+class Grocery(Resource):
+    @marshal_with(grocery_model_field)
+    def get(self, grocery_id):
+        """returns a grocery
+        ---
+        parameters:
+            - name: grocery_id
+              in: path
+              type: integer
+              required: true
+        responses:
+            200:
+                description: Get data related to one particular grocery
+        """
+        abort_if_grocery_missing(grocery_id)
+        grocery = GroceryModel.query.get(grocery_id)
 
-@app.route('/')
+        return grocery
+    
+    @marshal_with(grocery_model_field)
+    def put(self, grocery_id):
+        abort_if_grocery_missing(grocery_id)
+
+        data = grocery_req.parse_args()
+
+        grocery = GroceryModel.query.get(grocery_id)
+        
+        grocery.number = data['number']
+        grocery.origin = data['origin']
+        grocery.type = data['type']
+
+        db.session.commit()
+
+        return grocery
+    
+    @marshal_with(grocery_model_field)
+    def patch(self, grocery_id):
+        abort_if_grocery_missing(grocery_id)
+        
+        data = grocery_req_patch.parse_args()
+
+        grocery = GroceryModel.query.get(grocery_id)
+        
+        if data['number']:
+            grocery.number = data['number']
+        
+        if data['origin']:
+            grocery.origin = data['origin']
+        
+        if data['type']:
+            grocery.type = data['type']
+        
+        db.session.commit()
+
+        return grocery
+    
+    def delete(self, grocery_id):
+        abort_if_grocery_missing(grocery_id)
+
+        grocery = GroceryModel.query.get(grocery_id)
+
+        db.session.delete(grocery)
+        db.session.commit()
+
+        return '', 204
+
+
+@app.route('/',methods=["GET", "POST"])
+
 def webpage():
     groceries = GroceryModel.query.all()
-    magic_word = 'Step5'
-    return render_template('webpage.html', groceries=groceries, magic_word=magic_word)
+    return render_template("webpage.html", groceries = groceries)
+
+#handling JSON Or HTML file
+def JSON_HMTL():
+    #content_type = request.headers.get('Content-Type')
+    if request.headers.get('ACCEPT'):
+        json = request.json
+        return json
+    else:
+        groceries = GroceryModel.query.all()
+        magic_word = 'Step5'
+        return render_template('webpage.html', groceries=groceries, magic_word=magic_word)
+
+# handling the redirection conditions
+""" def post_redirect_get():
+    if request.method == "GET":
+
+        groceries = GroceryModel.query.all()
+        magic_word = 'Step5'
+        return render_template('webpage.html', groceries=groceries, magic_word=magic_word)
+    else:
+        return redirect("/groceries") """
 #def main_page():
 #    return {'message': 'This is the main page'}
+
+#@app.route('/')
+def redirecting_url():
+    return flask.redirect("/groceries")
 
 @app.route('/health/', methods=['GET'])
 def health_page():
     return {'message': 'This is the health page'}
 
 api.add_resource(GroceryList, '/groceries')
+api.add_resource(Grocery, '/groceries/<int:grocery_id>')
 
 
 if __name__ == '__main__':
