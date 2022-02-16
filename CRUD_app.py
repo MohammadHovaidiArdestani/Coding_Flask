@@ -166,7 +166,7 @@ class Grocery(Resource):
         return '', 204
 
 
-@app.route('/',methods=["GET", "POST"])
+@app.route('/',methods=["GET", "POST", "PATCH"])
 def webpage():
     groceries = GroceryModel.query.all()
     return render_template("webpage.html", groceries = groceries)
@@ -218,7 +218,9 @@ def create():
         )
         db.session.add(new_grocery)
         db.session.commit()
-        return redirect("http://192.168.18.190:8080/")
+        groceries = GroceryModel.query.all()
+        magic_word = 'Step8'
+        return render_template('webpage.html', groceries=groceries, magic_word=magic_word)
 
     return render_template('create.html')
 
@@ -231,10 +233,46 @@ def delete(id):
     magic_word = 'Step5'
     return render_template('webpage.html', groceries=groceries, magic_word=magic_word)
 
-@app.route('/modify/<int:id>/', methods=['POST'])
+@app.route('/modify/<int:id>/', methods=['GET','PATCH', 'POST'])
 def modify(id):
-    g = GroceryModel.query.get(id)
-    return render_template('modify.html', g = g)
+
+    # This part is supported by postman
+    if request.method == 'PATCH':  
+        data = grocery_req_patch.parse_args()
+        grocery = GroceryModel.query.get(id)
+        if data['number']:
+            grocery.number = data['number']
+        
+        if data['origin']:
+            grocery.origin = data['origin']
+        
+        if data['type']:
+            grocery.type = data['type'] 
+        
+        db.session.commit()
+        groceries = GroceryModel.query.all()
+        magic_word = 'Step8'
+        return render_template('webpage.html', groceries=groceries, magic_word=magic_word) 
+    # This part is supported by browser
+    elif request.method == 'POST':
+        data = grocery_req_patch.parse_args()
+        grocery = GroceryModel.query.get(id)
+        if data['number']:
+            grocery.number = data['number']
+        
+        if data['origin']:
+            grocery.origin = data['origin']
+        
+        if data['type']:
+            grocery.type = data['type'] 
+
+        db.session.commit()
+        groceries = GroceryModel.query.all()
+        magic_word = 'Step8'
+        return render_template('webpage.html', groceries=groceries, magic_word=magic_word)
+
+    return render_template('modify.html')
+
 
 api.add_resource(GroceryList, '/groceries')
 api.add_resource(Grocery, '/groceries/<int:grocery_id>')
