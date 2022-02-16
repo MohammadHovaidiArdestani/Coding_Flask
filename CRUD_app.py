@@ -5,10 +5,15 @@ from flask_restful import Api, Resource, abort, reqparse, marshal_with, fields
 import random
 import requests
 from copy import copy
+from flask_accept import accept
+import pyodbc
 from flask_sqlalchemy import SQLAlchemy
 from flasgger import Swagger
 import flasgger
+from flask import jsonify
 from flask_debugtoolbar import DebugToolbarExtension
+import json
+import marshal
 
 
 # Step1: Create a Flask app listening on port 8080
@@ -30,15 +35,6 @@ class GroceryModel(db.Model):
     origin = db.Column(db.String(50), nullable=False) 
 
 db.create_all()
-
-""" grocery_data = {
-     1: {
-         "id": 1,
-         "number": "GR1",
-         "type": "Veg",
-         "origin": "Spain",
-     },
-} """
 
 # define the format of data so that the marshal_with can convert them later
 grocery_model_field = {
@@ -98,6 +94,7 @@ class GroceryList(Resource):
         db.session.commit()
 
         return new_grocery, 201
+        
 
 class Grocery(Resource):
     @marshal_with(grocery_model_field)
@@ -165,36 +162,22 @@ class Grocery(Resource):
 
         return '', 204
 
-
 @app.route('/',methods=["GET", "POST", "PATCH"])
 def webpage():
-    groceries = GroceryModel.query.all()
-    return render_template("webpage.html", groceries = groceries)
-
-#handling JSON Or HTML file
-def JSON_HMTL():
-    #content_type = request.headers.get('Content-Type')
-    if request.headers.get('ACCEPT'):
-        json = request.json
-        return json
-    else:
+    #handling JSON Or HTML file:
+    accept_header = request.headers.get('Accept', '*/*')
+    if "text/html" in accept_header:
         groceries = GroceryModel.query.all()
-        magic_word = 'Step5'
-        return render_template('webpage.html', groceries=groceries, magic_word=magic_word)
-
-# handling the redirection conditions
-""" def post_redirect_get():
-    if request.method == "GET":
-
-        groceries = GroceryModel.query.all()
-        magic_word = 'Step5'
-        return render_template('webpage.html', groceries=groceries, magic_word=magic_word)
+        return render_template("webpage.html", groceries = groceries)
     else:
-        return redirect("/groceries") """
-
-#@app.route('/')
-def redirecting_url():
-    return flask.redirect("/groceries")
+        #api.add_resource(jsonAPI, '/')
+        #print(result)
+        #return result
+        #jsonStr = {for g in json.dumps(result.__dict__)}
+        #x = json.dumps([z.__dict__ for z in result])
+        #print('Groceries are',result[1].__dict__)
+        #return jsonify(result)
+        return {'message': 'Return JSON'}
 
 @app.route('/health/', methods=['GET'])
 def health_page():
@@ -276,7 +259,6 @@ def modify(id):
 
 api.add_resource(GroceryList, '/groceries')
 api.add_resource(Grocery, '/groceries/<int:grocery_id>')
-
 
 if __name__ == '__main__':
       app.run(debug = True, host='0.0.0.0', port=8080)
