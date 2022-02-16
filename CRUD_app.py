@@ -183,20 +183,6 @@ def JSON_HMTL():
         magic_word = 'Step5'
         return render_template('webpage.html', groceries=groceries, magic_word=magic_word)
 
-# handling the redirection conditions
-""" def post_redirect_get():
-    if request.method == "GET":
-
-        groceries = GroceryModel.query.all()
-        magic_word = 'Step5'
-        return render_template('webpage.html', groceries=groceries, magic_word=magic_word)
-    else:
-        return redirect("/groceries") """
-
-#@app.route('/')
-def redirecting_url():
-    return flask.redirect("/groceries")
-
 @app.route('/health/', methods=['GET'])
 def health_page():
     return {'message': 'This is the health page'}
@@ -253,8 +239,26 @@ def modify(id):
     g = GroceryModel.query.get(id)
     return render_template('modify.html', g = g)
 
-api.add_resource(GroceryList, '/groceries')
-api.add_resource(Grocery, '/groceries/<int:grocery_id>')
+#@app.route('/groceries', methods=["GET"])
+#def groceries_list():
+#    groceries = GroceryModel.query.all()
+#    return render_template("webpage.html", groceries=groceries)
+
+@app.route('/groceries', methods=["GET", "POST"])
+def groceries_list2():
+    start = request.args.get('start', default=0, type=int)
+    count = request.args.get('count', default=0, type=int)
+    end_index = start+count
+    index_list = list(range(start, end_index+1))
+    groceries = db.session.query(GroceryModel).filter(GroceryModel.id.in_(index_list)).all()
+    return render_template("webpage.html", groceries=groceries)
+
+@app.route('/groceries/<int:start>/<int:count>', methods=["GET", "POST"])
+def groceries_list3(start, count):
+    end_index = start + count
+    index_list = list(range(start, end_index+1))
+    groceries = db.session.query(GroceryModel).filter(GroceryModel.id.in_(index_list)).all()
+    return render_template("webpage.html", groceries = groceries)
 
 
 if __name__ == '__main__':
