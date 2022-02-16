@@ -239,22 +239,22 @@ def modify(id):
     g = GroceryModel.query.get(id)
     return render_template('modify.html', g = g)
 
-#@app.route('/groceries', methods=["GET"])
-#def groceries_list():
-#    groceries = GroceryModel.query.all()
-#    return render_template("webpage.html", groceries=groceries)
-
 @app.route('/groceries', methods=["GET", "POST"])
-def groceries_list2():
+def groceries_list():
     start = request.args.get('start', default=0, type=int)
     count = request.args.get('count', default=0, type=int)
-    end_index = start+count
-    index_list = list(range(start, end_index+1))
-    groceries = db.session.query(GroceryModel).filter(GroceryModel.id.in_(index_list)).all()
+    contains = request.args.get('contains')
+    if contains is None:
+        end_index = start+count
+        index_list = list(range(start, end_index+1))
+        groceries = db.session.query(GroceryModel).filter(GroceryModel.id.in_(index_list)).all()
+    else:
+        groceries = db.session.query(GroceryModel).filter(GroceryModel.origin.like("%" + contains + "%")).all()
     return render_template("webpage.html", groceries=groceries)
 
+
 @app.route('/groceries/<int:start>/<int:count>', methods=["GET", "POST"])
-def groceries_list3(start, count):
+def groceries_list2(start, count):
     end_index = start + count
     index_list = list(range(start, end_index+1))
     groceries = db.session.query(GroceryModel).filter(GroceryModel.id.in_(index_list)).all()
