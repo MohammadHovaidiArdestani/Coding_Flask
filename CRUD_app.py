@@ -1,4 +1,5 @@
 # Development  project - Flask
+import pyodbc
 from flask import Flask, redirect, request, render_template
 import flask
 from flask_restful import Api, Resource, abort, reqparse, marshal_with, fields
@@ -218,6 +219,22 @@ def create():
         )
         db.session.add(new_grocery)
         db.session.commit()
+        last_item = GroceryModel.query.order_by(GroceryModel.id.desc()).first()
+        last_item_id = last_item.id
+        g = GroceryModel.query.get(last_item_id)
+        #Creating connection Object called conn which will contain SQL Server Connection
+        conn = pyodbc.connect('Driver={ODBC Driver 17 for SQL Server};'
+                              'Server=.\SQLEXPRESS;'
+                              'Database=groceries;'
+                              'Trusted_Connection=yes;')
+        cursor = conn.cursor()
+        insert_query = '''
+            INSERT INTO items (id, number, type, origin) 
+            VALUES (?, ?, ?, ?);'''
+        values = (last_item_id, g.number, g.type, g.origin)
+        cursor.execute(insert_query, values)
+        conn.commit()
+        conn.close()
         return redirect("http://192.168.18.190:8080/")
 
     return render_template('create.html')
