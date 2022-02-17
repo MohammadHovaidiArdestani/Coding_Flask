@@ -1,16 +1,22 @@
 # Development  project - Flask
-import pyodbc
+from unittest import result
 from flask import Flask, redirect, request, render_template
 import flask
 from flask_restful import Api, Resource, abort, reqparse, marshal_with, fields
 import random
 import requests
 from copy import copy
+from flask_accept import accept
+import pyodbc
 from flask_sqlalchemy import SQLAlchemy
 from flasgger import Swagger
 import flasgger
+from flask import jsonify
 from flask_debugtoolbar import DebugToolbarExtension
-
+import json
+from dataclasses import dataclass
+from collections import defaultdict
+from sqlalchemy import inspect
 
 # Step1: Create a Flask app listening on port 8080
 app = Flask(__name__)
@@ -24,22 +30,16 @@ DebugToolbarExtension(app)
 db = SQLAlchemy(app)
 Swagger(app)
 
+
 class GroceryModel(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     number = db.Column(db.String(10), nullable=False)
     type = db.Column(db.String(50), nullable=False)
     origin = db.Column(db.String(50), nullable=False) 
 
+
 db.create_all()
 
-""" grocery_data = {
-     1: {
-         "id": 1,
-         "number": "GR1",
-         "type": "Veg",
-         "origin": "Spain",
-     },
-} """
 
 # define the format of data so that the marshal_with can convert them later
 grocery_model_field = {
@@ -60,11 +60,13 @@ grocery_req_patch.add_argument('number', type=str, required=False)
 grocery_req_patch.add_argument('type', type=str, required=False)
 grocery_req_patch.add_argument('origin', type=str, required=False)
 
+
 def abort_if_grocery_missing(grocery_id):
-    grocery  = GroceryModel.query.get(grocery_id)
+    grocery = GroceryModel.query.get(grocery_id)
 
     if not grocery:
         abort(404, message='No grocery found with this id')
+
 
 class GroceryList(Resource):
 
@@ -99,6 +101,7 @@ class GroceryList(Resource):
         db.session.commit()
 
         return new_grocery, 201
+
 
 class Grocery(Resource):
     @marshal_with(grocery_model_field)
@@ -167,10 +170,39 @@ class Grocery(Resource):
         return '', 204
 
 
-@app.route('/',methods=["GET", "POST"])
+@app.route('/', methods=["GET", "POST", "PATCH"])
 def webpage():
-    groceries = GroceryModel.query.all()
-    return render_template("webpage.html", groceries = groceries)
+    #handling JSON Or HTML file
+    accept_header = request.headers.get('Accept', '*/*')
+    if "text/html" in accept_header:
+        groceries = GroceryModel.query.all()
+        return render_template("webpage.html", groceries = groceries)
+    else:
+
+        results = GroceryModel.query.all()
+        result = defaultdict(list)
+        for obj in results:
+            instance = inspect(obj)
+            for key, x in instance.attrs.items():
+                result[key].append(x.value)
+        ids = result['id']
+        numbers = result['number']
+        types = result['type']
+        origins = result['origin']
+
+        lst = list()
+
+        for i in range(len(ids)):
+            a = dict()
+            a["id"] = ids[i]
+            a["number"] = numbers[i]
+            a["type"] = types[i]
+            a["origin"] = origins[i]
+            lst.append(a)
+
+        print(type(result))
+        return jsonify(lst)
+
 
 #handling JSON Or HTML file
 def JSON_HMTL():
@@ -221,7 +253,9 @@ def create():
         cursor.execute(insert_query, values)
         conn.commit()
         conn.close()
-        return redirect("http://192.168.18.190:8080/")
+        groceries = GroceryModel.query.all()
+        magic_word = 'Step8'
+        return render_template('webpage.html', groceries=groceries, magic_word=magic_word)
 
     return render_template('create.html')
 
@@ -234,10 +268,45 @@ def delete(id):
     magic_word = 'Step5'
     return render_template('webpage.html', groceries=groceries, magic_word=magic_word)
 
-@app.route('/modify/<int:id>/', methods=['POST'])
+
+@app.route('/modify/<int:id>/', methods=['GET', 'PATCH', 'POST'])
 def modify(id):
-    g = GroceryModel.query.get(id)
-    return render_template('modify.html', g = g)
+    # This part is supported by postman
+    if request.method == 'PATCH':
+        data = grocery_req_patch.parse_args()
+        grocery = GroceryModel.query.get(id)
+        if data['number']:
+            grocery.number = data['number']
+
+        if data['origin']:
+            grocery.origin = data['origin']
+
+        if data['type']:
+            grocery.type = data['type']
+
+        db.session.commit()
+        groceries = GroceryModel.query.all()
+        magic_word = 'Step8'
+        return render_template('webpage.html', groceries=groceries, magic_word=magic_word)
+        # This part is supported by browser
+    elif request.method == 'POST':
+        data = grocery_req_patch.parse_args()
+        grocery = GroceryModel.query.get(id)
+        if data['number']:
+            grocery.number = data['number']
+
+        if data['origin']:
+            grocery.origin = data['origin']
+
+        if data['type']:
+            grocery.type = data['type']
+
+        db.session.commit()
+        groceries = GroceryModel.query.all()
+        magic_word = 'Step8'
+        return render_template('webpage.html', groceries=groceries, magic_word=magic_word)
+
+    return render_template('modify.html')
 
 @app.route('/groceries', methods=["GET", "POST"])
 def groceries_list():

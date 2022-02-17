@@ -11,7 +11,7 @@
                           <button type="submit" class="btn btn-danger btn-sm">Delete item</button>
                     </form>
             </p>
-            <p><form method="post" action="{{ url_for('modify', id = g['id']) }}">
+            <p><form method="get" action="{{ url_for('modify', id = g['id']) }}">
                           <button type="submit" class="btn btn-danger btn-sm">Modify item</button>
                     </form>
             </p>
