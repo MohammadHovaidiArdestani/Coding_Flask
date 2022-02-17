@@ -24,22 +24,16 @@
                 </tr>
             </thead>
             <tbody>
-                
                 {% for g in groceries %}
-                
                 <tr>
                     <td>{{g.id}}</td>
                     <td><a href="{{ url_for('details', id = g.id) }}">{{g.number}}</a></td>
                     <td>{{g.type}}</td>
                     <td>{{g.origin}}</td>
                 </tr>
-
                 {% endfor %}
-
-
             </tbody>
         </table>
     </div>
 </body>
-
 </html>

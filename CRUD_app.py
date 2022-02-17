@@ -74,13 +74,12 @@ class GroceryList(Resource):
     @marshal_with(grocery_model_field)
     def get(self):
         """
-        returns all groceris
+        returns all groceries
         ---
         responses:
             200:
                 description : list of groceries
         """
-        #return grocery_data
         result = GroceryModel.query.all()
 
         return result
