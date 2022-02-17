@@ -1,4 +1,5 @@
 # Development  project - Flask
+from unittest import result
 from flask import Flask, redirect, request, render_template
 import flask
 from flask_restful import Api, Resource, abort, reqparse, marshal_with, fields
@@ -13,7 +14,9 @@ import flasgger
 from flask import jsonify
 from flask_debugtoolbar import DebugToolbarExtension
 import json
-import marshal
+from dataclasses import dataclass
+from collections import defaultdict
+from sqlalchemy import inspect
 
 
 # Step1: Create a Flask app listening on port 8080
@@ -28,6 +31,7 @@ DebugToolbarExtension(app)
 db = SQLAlchemy(app)
 Swagger(app)
 
+@dataclass
 class GroceryModel(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     number = db.Column(db.String(10), nullable=False)
@@ -170,14 +174,30 @@ def webpage():
         groceries = GroceryModel.query.all()
         return render_template("webpage.html", groceries = groceries)
     else:
-        #api.add_resource(jsonAPI, '/')
-        #print(result)
-        #return result
-        #jsonStr = {for g in json.dumps(result.__dict__)}
-        #x = json.dumps([z.__dict__ for z in result])
-        #print('Groceries are',result[1].__dict__)
-        #return jsonify(result)
-        return {'message': 'Return JSON'}
+
+        results = GroceryModel.query.all()
+        result = defaultdict(list)
+        for obj in results:
+            instance = inspect(obj)
+            for key, x in instance.attrs.items():
+                result[key].append(x.value)
+        ids = result['id']
+        numbers = result['number']
+        types = result['type']
+        origins = result['origin']
+
+        lst = list()
+
+        for i in range(len(ids)):
+            a = dict()
+            a["id"] = ids[i]
+            a["number"] = numbers[i]
+            a["type"] = types[i]
+            a["origin"] = origins[i]
+            lst.append(a)
+
+        print(type(result))
+        return jsonify(lst)
 
 @app.route('/health/', methods=['GET'])
 def health_page():
